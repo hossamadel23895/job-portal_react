@@ -1,130 +1,162 @@
-import { useState, useEffect } from 'react';
-import styled from 'styled-components';
-import { useGlobalContext } from '../context/appContext';
-import { Navigate } from 'react-router-dom';
-import FormRow from '../components/FormRow';
-import logo from '../assets/logo.svg';
+import {useContext, useEffect, useState} from 'react';
+import axios from "axios";
+import {UserContext} from "../App";
+import {useNavigate} from 'react-router-dom';
+import background from "../assets/images/fotis-fotopoulos-LJ9KY8pIH3E-unsplash.jpg";
 
 function Register() {
-  const [values, setValues] = useState({
-    name: '',
-    email: '',
-    password: '',
-    isMember: true,
-  });
+    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [passwordConfirmation, setPasswordConfirmation] = useState('');
+    const [userType, setUserType] = useState('');
+    const [gender, setGender] = useState('');
+    const [tags, setTags] = useState([]);
+    const [selectedTags, setSelectedTags] = useState([]);
+    const [address, setAddress] = useState('');
+    const [success, setSuccess] = useState('');
+    const [error, setError] = useState('');
 
-  const { user, register, login, isLoading, showAlert } = useGlobalContext();
-  const toggleMember = () => {
-    setValues({ ...values, isMember: !values.isMember });
-  };
-  const handleChange = (e) => {
-    setValues({ ...values, [e.target.name]: e.target.value });
-  };
-  const onSubmit = (e) => {
-    e.preventDefault();
-    const { name, email, password, isMember } = values;
+    const {user} = useContext(UserContext);
 
-    if (isMember) {
-      login({ email, password });
-    } else {
-      register({ name, email, password });
+    const navigate = useNavigate();
+
+    const fetchTags = async () => {
+        const response = await axios.get('http://127.0.0.1:8000/api/tags');
+        const tags = await response.data;
+        setTags(tags);
     }
-  };
 
-  return (
-    <>
-      {user && <Navigate to='/dashboard' />}
-      <Wrapper className='page full-page'>
-        <div className='container'>
-          {showAlert && (
-            <div className='alert alert-danger'>
-              there was an error, please try again
+    const renderTags = () => {
+        return tags.map((tag) => {
+            return (<option key={tag.id} value={tag.id}>{tag.name}</option>)
+        })
+    }
+
+    const handleRegister = async (e) => {
+        e.preventDefault();
+        setSuccess('');
+        setError('');
+        const data = {
+            'username': username,
+            'email': email,
+            'password': password,
+            'password_confirmation': passwordConfirmation,
+            'user_type': userType,
+        }
+        if (userType === 'recruiter')
+            data.address = address
+        else if (userType === 'developer') {
+            data.gender = gender;
+            data.tags = selectedTags;
+        }
+        try {
+            await axios.post('http://127.0.0.1:8000/api/signup', data);
+            setSuccess('Registration Successful!');
+        } catch (e) {
+            let errors = '';
+            let responseErrors = e.response.data;
+            for (let error in responseErrors) {
+                errors += `${error}: ${responseErrors[error].join(', ')} \n`;
+            }
+            setError(errors);
+        }
+    }
+
+    useEffect(() => {
+        if (user.authenticated)
+            navigate('/');
+        fetchTags();
+    }, [user])
+
+    return (
+        <div style={{
+            backgroundImage: `url(${background})`,
+            backgroundSize: 'cover',
+            height: '140vh',
+            paddingTop: "60px"
+        }}>
+            <div className={'container d-flex flex-column'} style={{}}>
+                <div className={'d-flex col-4 align-self-center'}>
+                    {error && (<div className={'alert alert-danger'} style={{whiteSpace: "pre-wrap"}}>{error}</div>)}
+                </div>
+                <div className="card">
+                    <h5 className="card-header">Register</h5>
+                    <div className="card-body bg-transparent">
+                        <form onSubmit={handleRegister}>
+                            <div className="mb-3">
+                                <label htmlFor="username" className="form-label fw-bold fs-5">Username</label>
+                                <input type="text" className="form-control" id="username"
+                                       onChange={(e) => setUsername(e.target.value)}/>
+                            </div>
+                            <div className="mb-3">
+                                <label htmlFor="email" className="form-label fw-bold fs-5">Email address</label>
+                                <input type="email" className="form-control" id="email"
+                                       onChange={(e) => setEmail(e.target.value)}/>
+                            </div>
+                            <div className="mb-3">
+                                <label htmlFor="password" className="form-label fw-bold fs-5">Password</label>
+                                <input type="password" className="form-control" id="password"
+                                       onChange={(e) => setPassword(e.target.value)}/>
+                            </div>
+                            <div className="mb-3">
+                                <label htmlFor="confirm-password" className="form-label fw-bold fs-5">Confirm
+                                    Password</label>
+                                <input type="password" className="form-control" id="confirm-password"
+                                       onChange={(e) => setPasswordConfirmation(e.target.value)}/>
+                            </div>
+                            <div className="mb-3">
+                                <label htmlFor="user-type" className="form-label fw-bold fs-5">User Type</label>
+                                <select id="user-type" className="form-select"
+                                        onChange={(e) => setUserType(e.target.value)}>
+                                    <option value="">Select Type</option>
+                                    <option value="recruiter">Recruiter</option>
+                                    <option value="developer">Developer</option>
+                                </select>
+                            </div>
+                            {userType === 'developer' && (
+                                <>
+                                    <div className="mb-3">
+                                        <label htmlFor="gender" className="form-label fw-bold fs-5">Gender</label>
+                                        <select id="gender" className="form-select"
+                                                onChange={(e) => setGender(e.target.value)}>
+                                            <option value="">Select Type</option>
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="mb-3">
+                                        <label htmlFor="tags" className="form-label fw-bold fs-5">Tags</label>
+                                        <select multiple id="tags" className="form-select"
+                                                onChange={(e) => setSelectedTags(Array.from(e.target.selectedOptions, option => option.value))}>
+                                            {renderTags()}
+                                        </select>
+                                    </div>
+                                </>
+                            )}
+
+                            {userType === 'recruiter' && (
+                                <>
+                                    <div className="mb-3">
+                                        <label htmlFor="address" className="form-label">Address</label>
+                                        <input type="text" className="form-control" id="address"
+                                               onChange={(e) => setAddress(e.target.value)}/>
+                                    </div>
+                                </>
+                            )}
+                            {userType !== '' && <button type="submit" className="btn btn-primary">Register</button>}
+                        </form>
+                        {success && (<div className={'alert alert-success'} role={'alert'}>{success}
+                            <button type="button" className="btn-close" data-bs-dismiss="alert"
+                                    aria-label="Close"></button>
+                        </div>)}
+
+                    </div>
+                </div>
             </div>
-          )}
-          <form className='form' onSubmit={onSubmit}>
-            <img src={logo} alt='jobio' className='logo' />
-            <h4>{values.isMember ? 'Login' : 'Register'}</h4>
-            {/* name field */}
-            {!values.isMember && (
-              <FormRow
-                type='name'
-                name='name'
-                value={values.name}
-                handleChange={handleChange}
-              />
-            )}
-
-            {/* single form row */}
-            <FormRow
-              type='email'
-              name='email'
-              value={values.email}
-              handleChange={handleChange}
-            />
-            {/* end of single form row */}
-            {/* single form row */}
-            <FormRow
-              type='password'
-              name='password'
-              value={values.password}
-              handleChange={handleChange}
-            />
-            {/* end of single form row */}
-            <button
-              type='submit'
-              className='btn btn-block'
-              disabled={isLoading}
-            >
-              {isLoading ? 'Fetching User...' : 'Submit'}
-            </button>
-            <p>
-              {values.isMember ? 'Not a member yet?' : 'Already a member?'}
-
-              <button
-                type='button'
-                onClick={toggleMember}
-                className='member-btn'
-              >
-                {values.isMember ? 'Register' : 'Login'}
-              </button>
-            </p>
-          </form>
         </div>
-      </Wrapper>
-    </>
-  );
+    );
 }
-
-const Wrapper = styled.section`
-  display: grid;
-  align-items: center;
-  .logo {
-    display: block;
-    margin: 0 auto;
-    margin-bottom: 1.38rem;
-  }
-  .form {
-    max-width: 400;
-    border-top: 5px solid var(--primary-500);
-  }
-
-  h4 {
-    text-align: center;
-  }
-  p {
-    margin: 0;
-    margin-top: 1rem;
-    text-align: center;
-  }
-  .btn {
-    margin-top: 1rem;
-  }
-  .member-btn {
-    background: transparent;
-    border: transparent;
-    color: var(--primary-500);
-    cursor: pointer;
-  }
-`;
 
 export default Register;
