@@ -3,6 +3,7 @@ import {useContext, useEffect, useState} from "react";
 import {UserContext} from "../App";
 import {useNavigate} from "react-router-dom";
 import background from "../assets/images/fotis-fotopoulos-LJ9KY8pIH3E-unsplash.jpg";
+import {UserServices} from "../services/UserServices";
 
 function Login() {
     const [username, setUsername] = useState('');
@@ -12,30 +13,33 @@ function Login() {
     const {user, setUser} = useContext(UserContext);
 
     const navigate = useNavigate();
+    const userService = new UserServices();
+
 
     const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
-        const data = {
+        const loginCredentials = {
             username: username,
             password: password,
         }
         try {
-            const response = await axios.post('http://127.0.0.1:8000/api/login', data);
+            // const response = await axios.post('http://127.0.0.1:8000/api/login', data);
+            const response = userService.login(loginCredentials)
             const result = await response.data;
             const user = {
                 authenticated: true,
                 token: result.token,
                 username: result.username,
-                id: result.id,
-                user_type: result.user_type,
+                id: result.user_id,
+                email: result.email,
             }
             setUser(user);
             localStorage.setItem('token', user.token);
             navigate('/');
         } catch (e) {
             let errors = '';
-            let responseErrors = e.response.data;
+            let responseErrors = e.response;
             for (let error in responseErrors) {
                 errors += `${error}: ${responseErrors[error].join(', ')} \n`;
             }
@@ -71,7 +75,8 @@ function Login() {
                                        onChange={(e) => setPassword(e.target.value)}/>
                             </div>
                             <div className={'d-flex justify-content-center'}>
-                                <button type="submit" className="btn btn-primary btn-lg align-self-center">Login</button>
+                                <button type="submit" className="btn btn-primary btn-lg align-self-center">Login
+                                </button>
                             </div>
 
                         </form>

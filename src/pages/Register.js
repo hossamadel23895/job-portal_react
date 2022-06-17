@@ -3,6 +3,8 @@ import axios from "axios";
 import {UserContext} from "../App";
 import {useNavigate} from 'react-router-dom';
 import background from "../assets/images/fotis-fotopoulos-LJ9KY8pIH3E-unsplash.jpg";
+import {TagServices} from "../services/TagServices";
+import {UserServices} from "../services/UserServices";
 
 function Register() {
     const [username, setUsername] = useState('');
@@ -16,16 +18,18 @@ function Register() {
     const [address, setAddress] = useState('');
     const [success, setSuccess] = useState('');
     const [error, setError] = useState('');
-
     const {user} = useContext(UserContext);
+    const tagService = new TagServices();
+    const userService = new UserServices();
 
     const navigate = useNavigate();
 
-    const fetchTags = async () => {
-        const response = await axios.get('http://127.0.0.1:8000/api/tags');
-        const tags = await response.data;
-        setTags(tags);
-    }
+    // const fetchTags = async () => {
+    //     // const response = await axios.get('http://127.0.0.1:8000/api/tags');
+    //     // const tags = await response.data;
+    //     let tags = tagService.getAll();
+    //     setTags(tags);
+    // }
 
     const renderTags = () => {
         return tags.map((tag) => {
@@ -66,7 +70,8 @@ function Register() {
     useEffect(() => {
         if (user.authenticated)
             navigate('/');
-        fetchTags();
+        let tags = tagService.getAll();
+        setTags(tags);
     }, [user])
 
     return (
